@@ -1,0 +1,21 @@
+logo:
+  text: RuleX 参考文档
+  type: link
+  path: index.html
+
+main:
+- text: 功能预览
+  type: link
+  path: docs/preview.html
+- text: 版本发布
+  type: link
+  path: docs/release.html
+- text: 构建编译
+  type: link
+  path: docs/build.html
+- text: 开发指南
+  type: link
+  path: docs/dev.html
+- text: 使用案例
+  type: link
+  path: docs/example.html

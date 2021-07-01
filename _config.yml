@@ -1,0 +1,43 @@
+# Hexo Configuration
+## Docs: https://hexo.io/docs/configuration.html
+## Source: https://github.com/hexojs/hexo/
+
+# Site
+title: RuleX Document
+author: wwhai
+timezone: UTC
+
+# URL
+## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
+url: https://wwhai.github.io/
+root: /hexo-theme-doc
+
+# Writing
+relative_link: false
+
+# Extensions
+## Plugins: https://hexo.io/plugins/
+## Themes: https://hexo.io/themes/
+theme: ../node_modules/hexo-theme-doc
+
+theme_config:
+  favicon: /images/favicon.ico
+  google_analytics: ""
+  support:
+    navigation: true
+    navigation_label: 支持和反馈
+    link_text: 提出Issue
+    link_url: https://github.com/wwhai/rulenginex/issues/new
+
+# turns off breaks on new line in md file. To get a line break add three spaces to the end of the line before the break
+marked:
+  breaks: false
+
+
+node_sass:
+  includePaths:
+   - node_modules
+
+ignore:
+  # development only: ignore sub node_modules when `npm link hexo-theme-doc`
+  - '**/node_modules/**/*node_modules'

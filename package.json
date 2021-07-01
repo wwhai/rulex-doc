@@ -1,0 +1,24 @@
+{
+  "name": "rulex",
+  "version": "0.0.0",
+  "description": "RuleX 文档",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "generate": "hexo clean && hexo generate",
+    "serve": "hexo server -s",
+    "lint": "eslint tests --ext .js"
+  },
+  "hexo": {
+    "version": "3.9.0"
+  },
+  "dependencies": {
+    "hexo": "^3.3.8",
+    "hexo-cli": "^1.0.3",
+    "hexo-renderer-ejs": "^0.2.0",
+    "hexo-renderer-marked": "^0.2.10",
+    "hexo-renderer-sass": "^0.3.2",
+    "hexo-server": "^0.2.1",
+    "hexo-theme-doc": "git+https://github.com/zalando-incubator/hexo-theme-doc.git"
+  }
+}
