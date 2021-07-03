@@ -9,8 +9,8 @@ timezone: UTC
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
-url: https://wwhai.github.io/
-root: /hexo-theme-doc
+url: https://wwhai.github.io/rulex_doc_html
+root: /rulex_doc_html/
 
 # Writing
 relative_link: false
@@ -41,3 +41,9 @@ node_sass:
 ignore:
   # development only: ignore sub node_modules when `npm link hexo-theme-doc`
   - '**/node_modules/**/*node_modules'
+
+# Deployment
+deploy:
+  type: git
+  repository: https://github.com/wwhai/rulex_doc_html.git
+  branch: master
