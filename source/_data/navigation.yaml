@@ -16,6 +16,9 @@ main:
 - text: 开发指南
   type: link
   path: docs/dev.html
+- text: 用户指南
+  type: link
+  path: docs/user_guide.html
 - text: HTTP API
   type: link
   path: docs/restapi.html
