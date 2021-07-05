@@ -33,28 +33,28 @@ RuleX 是一个轻量级规则引擎,主要用来中转上游数据和吐出数�
 
 ## 功能
 ### 数据入口
-- MQTT 数据入口
-- HTTP 数据入口
-- COAP 数据入口
-- UDP 数据入口
-- GRPC 数据入口
+- [X] MQTT 数据入口
+- [ ] HTTP 数据入口
+- [ ] COAP 数据入口
+- [ ] UDP 数据入口
+- [ ] GRPC 数据入口
+- [ ] 串口输入
+- [ ] CAN 输入
+- [ ] ModBUS输入
 
 ### 特色功能
 - LUA 自定义业务逻辑脚本支持
 - JQ Select 支持用Jq来做字段筛选
 
 ### 数据出口
-- 数据持久化到 MongoDB
-- 数据持久化到 Redis
-- 数据持久化到 Mysql
-- 数据转发 Kafka
-- 数据转发 ActiveMQ
+- [X] 数据持久化到 MongoDB
+- [ ] 数据持久化到 Redis
+- [ ] 数据持久化到 Mysql
+- [ ] 数据转发 Kafka
+- [ ] 数据转发 ActiveMQ
 
 ### 插件系统
 规则引擎提供了插件机制，用户可自己编写插件来进行扩展应用功能，比如 RuleX的 dashboard 插件.
-
-### Hook 机制
-规则引擎提供了插件机制，用户可自己编写 Hook 来进行对 RuleX 功能扩展 .
 
 ---
 ## 社区
