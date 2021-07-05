@@ -4,8 +4,8 @@ support: false
 ---
 
 # 开发指南
-## 源码导读
-```
+## 源码结构
+```txt
 -> % tree
 .
 ├── Dockerfile
@@ -75,21 +75,102 @@ type XPlugin interface {
 }
 
 ```
-
-## Hook开发
-Hook接口
+### 开发实例
+本实例展示了使用插件接口来实现一个 RestAPI Server。
+#### 核心代码
 ```go
-type XHook interface {
-	Work(inEndId string, data string) error
+package plugin
+
+import (
+	"context"
+	"net/http"
+	"rulenginex/statistics"
+	"rulenginex/x"
+	"runtime"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/ngaut/log"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
+)
+
+func init() {
+	gin.SetMode(gin.ReleaseMode)
+}
+
+const API_ROOT string = "/api/v1/"
+const DASHBOARD_ROOT string = "/dashboard/v1/"
+
+type HttpApiServer struct {
+	ginEngine  *gin.Engine
+	RuleEngine *x.RuleEngine
+}
+
+func (hh *HttpApiServer) Load(r *x.RuleEngine) *x.XPluginEnv {
+	hh.ginEngine = gin.New()
+	hh.ginEngine.LoadHTMLGlob("plugin/templates/*")
+	hh.RuleEngine = r
+	return x.NewXPluginEnv()
+}
+
+//
+func (hh *HttpApiServer) Init(env *x.XPluginEnv) error {
+
+	ctx := context.Background()
+	go func(ctx context.Context) {
+		hh.ginEngine.Run(":2580")
+	}(ctx)
+	return nil
+}
+func (hh *HttpApiServer) Install(env *x.XPluginEnv) (*x.XPluginMetaInfo, error) {
+	return &x.XPluginMetaInfo{
+		Name:     "HttpApiServer",
+		Version:  "0.0.1",
+		Homepage: "www.ezlinker.cn",
+		HelpLink: "www.ezlinker.cn",
+		Author:   "wwhai",
+		Email:    "cnwwhai@gmail.com",
+		License:  "MIT",
+	}, nil
+}
+
+//
+//
+func (hh *HttpApiServer) Start(e *x.RuleEngine, env *x.XPluginEnv) error {
+	hh.ginEngine.GET(API_ROOT+"system", func(c *gin.Context) {
+		cros(c)
+		//
+		percent, _ := cpu.Percent(time.Second, false)
+		memInfo, _ := mem.VirtualMemory()
+		parts, _ := disk.Partitions(true)
+		diskInfo, _ := disk.Usage(parts[0].Mountpoint)
+		c.JSON(http.StatusOK, gin.H{
+			"diskInfo":   diskInfo.UsedPercent,
+			"memInfo":    memInfo.UsedPercent,
+			"cpuPercent": percent[0],
+			"os":         runtime.GOOS,
+			"arch":       runtime.GOARCH,
+			"cpus":       runtime.GOMAXPROCS(0)})
+	})
+	//
+	log.Info("Http web dashboard started on:http://127.0.0.1:2580" + DASHBOARD_ROOT)
+	return nil
+}
+
+func (hh *HttpApiServer) Uninstall(env *x.XPluginEnv) error {
+	log.Info("HttpApiServer Uninstalled")
+	return nil
+}
+func (hh *HttpApiServer) Clean() {
+	log.Info("HttpApiServer Cleaned")
 }
 
 ```
+#### 加载
 
 ## InEnd开发
-
-<div style="text-align:center;">
-    <img style ="box-shadow: 10px 10px 10px rgba(0,0,0,.5);-moz-box-shadow: 10px 10px 10px rgba(0,0,0,.5);-webkit-box-shadow: 10px 10px 10px rgba(0,0,0,.5);" src="../images/p11.png" width = "1000" alt="IMG"/>
-</div>
 
 InEnd接口
 ```go
@@ -106,11 +187,114 @@ type inEnd struct {
 
 ```
 
+### 开发实例
+本实例演示了如何快速写一个资源输入端，下面的案例是一个串口数据输入端：
+
+#### 核心代码
+
+```go
+package x
+
+import (
+	"time"
+
+	"github.com/ngaut/log"
+	"github.com/tarm/serial"
+)
+
+type SerialResource struct {
+	*XStatus
+	serialPort *serial.Port
+}
+
+func NewSerialResource(inEndId string) *SerialResource {
+	s := SerialResource{}
+	s.inEndId = inEndId
+	return &s
+}
+
+func (s *SerialResource) Test(inEndId string) bool {
+	return true
+}
+
+func (s *SerialResource) Register(inEndId string) error {
+	return nil
+}
+
+func (s *SerialResource) Start(e *RuleEngine) error {
+	config := e.GetInEnd(s.inEndId).Config
+	name := (*config)["port"]
+	baud := (*config)["baud"]
+	readTimeout := (*config)["read_timeout"]
+	size := (*config)["size"]
+	parity := (*config)["parity"]
+	stopbits := (*config)["stopbits"]
+
+	serialPort, err := serial.OpenPort(&serial.Config{
+		Name:        name.(string),
+		Baud:        baud.(int),
+		ReadTimeout: time.Duration(readTimeout.(int64)),
+		Size:        size.(byte),
+		Parity:      serial.Parity(parity.(int)),
+		StopBits:    serial.StopBits(stopbits.(int)),
+	})
+	if err != nil {
+		log.Error("SerialResource start failed:", err)
+		return err
+	} else {
+		s.serialPort = serialPort
+		log.Info("SerialResource start success:")
+		return nil
+	}
+}
+
+func (s *SerialResource) Enabled() bool {
+	return true
+}
+
+func (s *SerialResource) Reload() {
+}
+
+func (s *SerialResource) Pause() {
+
+}
+
+func (s *SerialResource) Status(e *RuleEngine) State {
+	return UP
+}
+
+func (s *SerialResource) Stop() {
+}
+
+```
+
+#### 加载
+```go
+httpServer := plugin.HttpApiServer{}
+if e := engine.LoadPlugin(&httpServer); e != nil {
+    log.Fatal("rule load failed:", e)
+}
+```
+
+```go
+// 创建
+in1 := x.NewInEnd("Serial", "串口输入", "这是个测试用的Lora模块", &map[string]interface{}{
+	"name" : "/dev/ttyS1",
+	"baud" : 115200,
+	"readTimeout" : 5000,
+	"size " : 1,
+	"parity" : 1,
+	"stopbits" : 0,
+})
+// 加载
+if err := engine.LoadInEnd(in1); err != nil {
+	log.Fatal("InEnd load failed:", err)
+}
+```
+
+
 ## OutEnd开发
 OutEnd 接口
-<div style="text-align:center;">
-    <img style ="box-shadow: 10px 10px 10px rgba(0,0,0,.5);-moz-box-shadow: 10px 10px 10px rgba(0,0,0,.5);-webkit-box-shadow: 10px 10px 10px rgba(0,0,0,.5);" src="../images/p12.png" width = "1000" alt="IMG"/>
-</div>
 
 ```go
 type outEnd struct {
@@ -123,4 +307,119 @@ type outEnd struct {
 	Target      XTarget                 `json:"-"`
 }
 
+```
+
+### 实例开发
+本实例展示了如何编写一个数据持久化到 MongoDb 的出口。
+#### 核心代码
+```go
+package x
+
+import (
+	"context"
+
+	"github.com/ngaut/log"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+//
+type MongoTarget struct {
+	enabled    bool
+	outEndId   string
+	client     *mongo.Client
+	collection *mongo.Collection
+}
+
+func NewMongoTarget() *MongoTarget {
+
+	return &MongoTarget{
+		enabled: false,
+	}
+}
+
+func (m *MongoTarget) Register(outEndId string) error {
+	m.outEndId = outEndId
+	return nil
+}
+
+func (m *MongoTarget) Start(e *RuleEngine) error {
+	config := e.GetOutEnd(m.outEndId).Config
+	var clientOptions *options.ClientOptions
+	if (*config)["mongourl"] != nil {
+		clientOptions = options.Client().ApplyURI((*config)["mongourl"].(string))
+	} else {
+		clientOptions = options.Client().ApplyURI("mongodb://localhost:27017")
+	}
+	client, err0 := mongo.Connect(context.TODO(), clientOptions)
+	if err0 != nil {
+		return err0
+	}
+
+	if (*config)["database"] != nil {
+		if (*config)["collection"] != nil {
+			m.collection = client.Database((*config)["database"].(string)).Collection((*config)["collection"].(string))
+		} else {
+			m.collection = client.Database((*config)["mongourl"].(string)).Collection("rulex_data")
+
+		}
+	} else {
+		m.collection = client.Database("rulex").Collection("rulex_data")
+	}
+	m.client = client
+	m.enabled = true
+	log.Info("Mongodb connect successfully")
+	return nil
+
+}
+
+func (m *MongoTarget) Test(outEndId string) bool {
+	err1 := m.client.Ping(context.Background(), nil)
+	if err1 != nil {
+		return false
+	} else {
+		return true
+	}
+}
+
+func (m *MongoTarget) Enabled() bool {
+	return m.enabled
+}
+
+func (m *MongoTarget) Reload() {
+	log.Info("Mongotarget Reload success")
+}
+
+func (m *MongoTarget) Pause() {
+	log.Info("Mongotarget Pause success")
+
+}
+
+func (m *MongoTarget) Status(e *RuleEngine) State {
+	return e.GetOutEnd(m.outEndId).State
+}
+
+func (m *MongoTarget) Stop() {
+	log.Info("Mongotarget Stop success")
+}
+
+func (m *MongoTarget) To(data interface{}) error {
+	_, err := m.collection.InsertOne(context.TODO(), bson.D{{"data", data}})
+	if err != nil {
+		log.Error("Mongo To Failed:", err)
+	}
+	return err
+}
+ 
+```
+#### 加载
+```go
+out1 := x.NewOutEnd("mongo", "Data to mongodb", "Save data to mongodb",
+    &map[string]interface{}{
+        "mongourl": "%%%%%%%%",
+    })
+if err1 := engine.LoadOutEnds(out1); err1 != nil {
+    log.Fatal("OutEnd load failed:", err1)
+}
 ```
