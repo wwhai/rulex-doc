@@ -6,7 +6,7 @@ support: false
 # 构建编译
 首先需要克隆代码到本地:
 ```sh
-git clone https://github.com/wwhai/rulenginex.git
+git clone https://github.com/wwhai/rulex.git
 ```
 
 ## 编译

@@ -8,8 +8,8 @@ support: false
 
 <div style="text-align:center;">
     <img
-    src="images/logo.png"
-    width = "200"
+    src="images/atomic-logo.gif"
+    width = "400"
     alt="IMG"/>
 </div>
 
